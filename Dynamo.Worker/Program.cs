@@ -1,8 +1,9 @@
 using Dynamo.Worker;
+using Dynamo.Worker.Configuration;
 using Dynamo.Worker.GoogleDomains.Configuration;
-using Dynamo.Worker.Http.Configuration;
 using Dynamo.Worker.IpInfo;
 using Dynamo.Worker.IpInfo.Configuration;
+using Dynamo.Worker.Services;
 using Microsoft.Extensions.Options;
 using Refit;
 using Serilog;
@@ -28,17 +29,18 @@ IHost host = Host.CreateDefaultBuilder(args)
             })
             .Configure<GoogleDomainsOptions>(context.Configuration.GetSection("GoogleDomains"))
             .Configure<IpInfoOptions>(context.Configuration.GetSection("IpInfo"))
-            .Configure<HttpClientOptions>(context.Configuration.GetSection("HttpClient"))
+            .Configure<DynamoOptions>(context.Configuration.GetSection("Dynamo"))
+            .AddSingleton<IIpAddressService, IpAddressService>()
             .AddHostedService<Worker>();
 
         services.AddRefitClient<IIpInfoApi>()
             .ConfigureHttpClient((serviceProvider, httpClient) =>
             {
                 var ipInfoOpt = serviceProvider.GetRequiredService<IOptions<IpInfoOptions>>();
-                var httpClientOpt = serviceProvider.GetRequiredService<IOptions<HttpClientOptions>>();
+                var dynamoOpt = serviceProvider.GetRequiredService<IOptions<DynamoOptions>>();
 
                 httpClient.BaseAddress = new Uri(ipInfoOpt.Value.ApiAddress);
-                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", httpClientOpt.Value.UserAgentHeader);
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", dynamoOpt.Value.UserAgentHeader);
             });
     })
     .Build();

@@ -269,3 +269,6 @@ dc.*.yaml
 
 # Jetbrains dotCover
 *.dcvr*
+
+# IP cache
+ip.txt
