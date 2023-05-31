@@ -1,14 +1,14 @@
 using Dynamo.Worker;
-using Dynamo.Worker.Configuration;
+using Dynamo.Worker.GoogleDomains.Configuration;
+using Dynamo.Worker.Http.Configuration;
+using Dynamo.Worker.IpInfo;
+using Dynamo.Worker.IpInfo.Configuration;
+using Microsoft.Extensions.Options;
+using Refit;
 using Serilog;
-using Serilog.Exceptions;
+using LoggerFactory = Dynamo.Worker.Logging.LoggerFactory;
 
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.Debug()
-    .Enrich.FromLogContext()
-    .Enrich.WithExceptionDetails()
-    .CreateLogger();
+Log.Logger = LoggerFactory.CreateLogger();
 
 IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((context, builder) =>
@@ -26,8 +26,20 @@ IHost host = Host.CreateDefaultBuilder(args)
                 log.ClearProviders();
                 log.AddSerilog(Log.Logger, true);
             })
-            .Configure<GoogleDomainOptions>(context.Configuration.GetSection("GoogleDomains"))
+            .Configure<GoogleDomainsOptions>(context.Configuration.GetSection("GoogleDomains"))
+            .Configure<IpInfoOptions>(context.Configuration.GetSection("IpInfo"))
+            .Configure<HttpClientOptions>(context.Configuration.GetSection("HttpClient"))
             .AddHostedService<Worker>();
+
+        services.AddRefitClient<IIpInfoApi>()
+            .ConfigureHttpClient((serviceProvider, httpClient) =>
+            {
+                var ipInfoOpt = serviceProvider.GetRequiredService<IOptions<IpInfoOptions>>();
+                var httpClientOpt = serviceProvider.GetRequiredService<IOptions<HttpClientOptions>>();
+
+                httpClient.BaseAddress = new Uri(ipInfoOpt.Value.ApiAddress);
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", httpClientOpt.Value.UserAgentHeader);
+            });
     })
     .Build();
 
