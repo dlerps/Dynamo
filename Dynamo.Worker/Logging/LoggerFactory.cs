@@ -9,6 +9,7 @@ public static class LoggerFactory
     public static Logger CreateLogger()
     {
         return new LoggerConfiguration()
+            .MinimumLevel.Debug()
             .WriteTo.Console()
             .WriteTo.Debug()
             .Enrich.FromLogContext()

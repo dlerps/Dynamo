@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Dynamo.Worker;
 using Dynamo.Worker.Configuration;
 using Dynamo.Worker.GoogleDomains.Configuration;
@@ -31,16 +32,17 @@ IHost host = Host.CreateDefaultBuilder(args)
             .Configure<IpInfoOptions>(context.Configuration.GetSection("IpInfo"))
             .Configure<DynamoOptions>(context.Configuration.GetSection("Dynamo"))
             .AddSingleton<IIpAddressService, IpAddressService>()
+            .AddTransient<IHttpClientConfigurator, HttpClientConfigurator>()
             .AddHostedService<Worker>();
 
         services.AddRefitClient<IIpInfoApi>()
             .ConfigureHttpClient((serviceProvider, httpClient) =>
             {
+                var configurator = serviceProvider.GetRequiredService<IHttpClientConfigurator>();
                 var ipInfoOpt = serviceProvider.GetRequiredService<IOptions<IpInfoOptions>>();
-                var dynamoOpt = serviceProvider.GetRequiredService<IOptions<DynamoOptions>>();
 
                 httpClient.BaseAddress = new Uri(ipInfoOpt.Value.ApiAddress);
-                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", dynamoOpt.Value.UserAgentHeader);
+                configurator.Configure(httpClient);
             });
     })
     .Build();

@@ -27,8 +27,11 @@ public class Worker : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             var ip = await _ipAddressService.GetIpAddress();
+            
             if (await _ipAddressService.HasIpAddressChanged(ip))
                 _logger.LogInformation("Updating {Host} with {IpAddress}", _googleDomainOptions.Host, ip);
+            else
+                _logger.LogDebug("{IpAddress} remains unchanged", ip);
 
             await Task.Delay(10000, stoppingToken);
         }
