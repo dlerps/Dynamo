@@ -1,0 +1,149 @@
+using Dynamo.Worker.Configuration;
+using Dynamo.Worker.GoogleDomains;
+using Dynamo.Worker.GoogleDomains.Configuration;
+using Microsoft.Extensions.Options;
+
+namespace Dynamo.Worker.Services;
+
+public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
+{
+    private readonly IGoogleDomainsApi _googleDomainsApi;
+    private readonly IGoogleDomainsResponseInterpreter _responseInterpreter;
+    private readonly GoogleDomainsOptions _googleDomainsOptions;
+    private readonly string _userAgent;
+    private readonly ILogger<GoogleDnsUpdateService> _logger;
+
+    private readonly List<Task> _longRunningTasks;
+
+    public GoogleDnsUpdateService(
+        IGoogleDomainsApi googleDomainsApi,
+        IGoogleDomainsResponseInterpreter responseInterpreter,
+        IOptions<GoogleDomainsOptions> googleDomainsOptions,
+        IOptions<DynamoOptions> dynamoOptions,
+        ILogger<GoogleDnsUpdateService> logger)
+    {
+        _googleDomainsApi = googleDomainsApi;
+        _logger = logger;
+        _googleDomainsOptions = googleDomainsOptions.Value;
+        _responseInterpreter = responseInterpreter;
+        _userAgent = dynamoOptions.Value.UserAgentHeader;
+
+        _longRunningTasks = new List<Task>();
+    }
+
+    public Task UpdateAllHostnames(string ipAddress)
+    {
+        var updateTasks = _googleDomainsOptions.Hosts.Select(hostConfig => UpdateHostname(hostConfig, ipAddress));
+        return Task.WhenAll(updateTasks);
+    }
+
+    private async Task UpdateHostname(GoogleDomainsHostConfiguration hostConfiguration, string ipAddress)
+    {
+        if (!hostConfiguration.Enabled)
+        {
+            _logger.LogInformation("Hostname update for {Hostname} is disabled. Skipping...", hostConfiguration.Hostname);
+            return;
+        }
+
+        _logger.LogInformation("Attempting Google Domains hostname update for {Hostname}", hostConfiguration.Hostname);
+
+        var response = await _googleDomainsApi.PostDynamicHostnameIpUpdate(
+            hostConfiguration.Hostname,
+            ipAddress,
+            hostConfiguration.BasicAuthToken);
+
+        var responseInterpretation = _responseInterpreter.InterpretResponseString(response);
+        var handleTask = responseInterpretation switch
+        {
+            GoogleDomainsResponse.Good => HandleGoodResponse(hostConfiguration.Hostname, ipAddress),
+            GoogleDomainsResponse.IpAlreadySet => HandleNoChangeResponse(hostConfiguration, ipAddress),
+            GoogleDomainsResponse.TemporaryProblem => HandleTemporaryProblemResponse(hostConfiguration),
+            _ => HandleErrorResponse(responseInterpretation, hostConfiguration),
+        };
+
+        if (!handleTask.IsCompleted)
+            _longRunningTasks.Add(handleTask);
+    }
+
+    private Task HandleGoodResponse(string hostname, string ipAddress)
+    {
+        _logger.LogInformation(
+            "The response indicated that the DNS record of {Hostname} was successfully updated to {IpAddress}",
+            hostname,
+            ipAddress);
+
+        return Task.CompletedTask;
+    }
+    
+    private Task HandleNoChangeResponse(GoogleDomainsHostConfiguration hostConfiguration, string ipAddress)
+    {
+        _logger.LogWarning(
+            "The response indicated that the DNS record of {Hostname} was already set to {IpAddress}. Waiting for 1 hour before retrying",
+            hostConfiguration.Hostname,
+            ipAddress);
+
+        hostConfiguration.Enabled = false;
+
+        return Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromHours(1));
+            hostConfiguration.Enabled = true;
+        });
+    }
+    
+    private Task HandleTemporaryProblemResponse(GoogleDomainsHostConfiguration hostConfiguration)
+    {
+        _logger.LogWarning("The response indicated that the Google Domains server is having problems. Waiting 10 minutes until retrying");
+
+        hostConfiguration.Enabled = false;
+
+        return Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromMinutes(10));
+            hostConfiguration.Enabled = true;
+        });
+    }
+
+    private Task HandleErrorResponse(
+        GoogleDomainsResponse response, 
+        GoogleDomainsHostConfiguration hostConfiguration)
+    {
+        hostConfiguration.Enabled = false;
+        
+        _logger.LogError("Response {Response} is indicating an error", response.ToString());
+        
+        if (response == GoogleDomainsResponse.Abuse)
+            _logger.LogCritical("Requests for {Hostname} have been blocked for API abuse", hostConfiguration.Hostname);
+        if (response == GoogleDomainsResponse.AuthFailed)
+            _logger.LogCritical(
+                "The response indicates a failed authentication for {Hostname}. Correct your settings and retry",
+                hostConfiguration.Hostname);
+        if (response == GoogleDomainsResponse.ConflictingRecords)
+            _logger.LogCritical(
+                "The response indicates conflicting A/AAAA records for {Hostname}. Check your DNS settings and retry",
+                hostConfiguration.Hostname);
+        if (response == GoogleDomainsResponse.InvalidHost)
+            _logger.LogCritical(
+                "The response indicates that {Hostname} is an invalid hostname. Correct your settings and retry",
+                hostConfiguration.Hostname);
+        if (response == GoogleDomainsResponse.NonFullyQualifiedHostname)
+            _logger.LogCritical(
+                "The response indicates that {Hostname} is not a fully qualified hostname. Correct your settings and retry",
+                hostConfiguration.Hostname);
+        if (response == GoogleDomainsResponse.BannedUserAgent)
+            _logger.LogCritical(
+                "The response was rejected because {UserAgent} is invalid or banned. Change your settings and retry",
+                _userAgent);
+        
+        _logger.LogWarning("Disabled host config for {Hostname}", hostConfiguration.Hostname);
+        
+        return Task.CompletedTask;
+    }
+
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_longRunningTasks.Any())
+            await Task.WhenAll(_longRunningTasks);
+    }
+}

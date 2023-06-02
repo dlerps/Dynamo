@@ -1,6 +1,6 @@
-using System.Net.Http.Headers;
 using Dynamo.Worker;
 using Dynamo.Worker.Configuration;
+using Dynamo.Worker.GoogleDomains;
 using Dynamo.Worker.GoogleDomains.Configuration;
 using Dynamo.Worker.IpInfo;
 using Dynamo.Worker.IpInfo.Configuration;
@@ -17,11 +17,13 @@ IHost host = Host.CreateDefaultBuilder(args)
     {
         builder
             .AddJsonFile("appsettings.json", false, false)
-            .AddJsonFile($"appsettings.{context.HostingEnvironment}.json", true, false)
+            .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true, false)
             .AddEnvironmentVariables();
     })
     .ConfigureServices((context, services) =>
     {
+        Log.Logger.Information("Running in {Environment}", context.HostingEnvironment.EnvironmentName);
+        
         services
             .AddLogging(log =>
             {
@@ -31,7 +33,9 @@ IHost host = Host.CreateDefaultBuilder(args)
             .Configure<GoogleDomainsOptions>(context.Configuration.GetSection("GoogleDomains"))
             .Configure<IpInfoOptions>(context.Configuration.GetSection("IpInfo"))
             .Configure<DynamoOptions>(context.Configuration.GetSection("Dynamo"))
-            .AddSingleton<IIpAddressService, IpAddressService>()
+            .AddScoped<IIpAddressService, IpAddressService>()
+            .AddSingleton<IGoogleDnsUpdateService, GoogleDnsUpdateService>()
+            .AddScoped<IGoogleDomainsResponseInterpreter, GoogleDomainsResponseInterpreter>()
             .AddTransient<IHttpClientConfigurator, HttpClientConfigurator>()
             .AddHostedService<Worker>();
 
@@ -42,6 +46,20 @@ IHost host = Host.CreateDefaultBuilder(args)
                 var ipInfoOpt = serviceProvider.GetRequiredService<IOptions<IpInfoOptions>>();
 
                 httpClient.BaseAddress = new Uri(ipInfoOpt.Value.ApiAddress);
+                configurator.Configure(httpClient);
+            });
+        
+        services.AddRefitClient<IGoogleDomainsApi>()
+            .ConfigureHttpClient((serviceProvider, httpClient) =>
+            {
+                var configurator = serviceProvider.GetRequiredService<IHttpClientConfigurator>();
+                var googleDomainsOpt = serviceProvider.GetRequiredService<IOptions<GoogleDomainsOptions>>();
+                var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+             
+                logger.LogInformation("Google Domains API address: {ApiAddress}", googleDomainsOpt.Value.ApiAddress);
+                logger.LogInformation("Found {Count} hosts", googleDomainsOpt.Value.Hosts.Count());
+                
+                httpClient.BaseAddress = new Uri(googleDomainsOpt.Value.ApiAddress);
                 configurator.Configure(httpClient);
             });
     })
