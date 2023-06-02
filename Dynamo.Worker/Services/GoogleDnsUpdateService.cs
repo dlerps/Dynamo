@@ -34,15 +34,13 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService
         _userAgent = dynamoOptions.Value.UserAgentHeader;
     }
 
-    public Task UpdateAllHostnames(string ipAddress, CancellationToken cancellationToken)
+    public async Task UpdateAllHostnames(string ipAddress, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var updateTasks = _googleDomainsOptions
-            .Hosts
-            .Select(hostConfig => UpdateHostname(hostConfig, ipAddress, cancellationToken));
-
-        return Task.WhenAll(updateTasks);
+        foreach (var hostConfiguration in _googleDomainsOptions.Hosts)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await UpdateHostname(hostConfiguration, ipAddress, cancellationToken);
+        }
     }
 
     private async Task UpdateHostname(
@@ -75,6 +73,9 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService
 
         if (!handleTask.IsCompleted)
             _longRunningTaskService.Add(handleTask);
+        
+        // wait for 5 secs in case there are following update calls
+        await Task.Delay(5000, cancellationToken);
     }
 
     private Task HandleGoodResponse(string hostname, string ipAddress)
