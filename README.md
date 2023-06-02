@@ -98,13 +98,14 @@ An example setup using compose with an external `appsettings.json`:
 `docker-compose.yaml`:
 
 ```yaml
-version: '3.9'
+version: '3'
 
 services:
   dynamo:
     image: dlerps/dynamo:latest
+    restart: always
     volumes:
-      - ./appsettings.json:/dynamo/appsettings.Production.json
+      - ./appsettings.Test.json:/dynamo/appsettings.Production.json
       - dynamo-data:/dynamo/data
 
 volumes:
