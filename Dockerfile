@@ -15,6 +15,5 @@ ENV DOTNET_ENVIRONMENT=Production
 
 WORKDIR /dynamo
 COPY --from=build /publish .
-RUN ls -la
 
 ENTRYPOINT [ "dotnet", "Dynamo.Worker.dll" ]
