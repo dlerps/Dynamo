@@ -1,0 +1,11 @@
+version: '3.9'
+
+services:
+  dynamo:
+    image: dlerps/dynamo:latest
+    volumes:
+      - ./appsettings.Test.json:/dynamo/appsettings.Production.json
+      - dynamo-data:/dynamo/data
+
+volumes:
+  dynamo-data:

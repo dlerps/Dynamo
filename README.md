@@ -30,6 +30,7 @@ Dynamo uses appsettings in json format to load configurations. That gives you th
 The follwing options are available:
 
 ```json
+{
   "GoogleDomains": {
     "Hosts": [
       {

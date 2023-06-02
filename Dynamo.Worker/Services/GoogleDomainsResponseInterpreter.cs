@@ -4,7 +4,7 @@ namespace Dynamo.Worker.Services;
 
 public class GoogleDomainsResponseInterpreter : IGoogleDomainsResponseInterpreter
 {
-    private const string GoodResponse = "Good";
+    private const string GoodResponse = "good";
     private const string IpAlreadySetResponse = "nochg";
     private const string InvalidHostResponse = "nohost";
     private const string AuthFailedResponse = "badauth";
@@ -14,13 +14,22 @@ public class GoogleDomainsResponseInterpreter : IGoogleDomainsResponseInterprete
     private const string TemporaryProblemResponse = "911";
     private const string ConflictingRecordsResponse = "conflict";
 
+    private readonly ILogger<GoogleDomainsResponseInterpreter> _logger;
+
+    public GoogleDomainsResponseInterpreter(ILogger<GoogleDomainsResponseInterpreter> logger)
+    {
+        _logger = logger;
+    }
+
     public GoogleDomainsResponse InterpretResponseString(string responsePayload)
     {
-        if (responsePayload.StartsWith(GoodResponse))
+        _logger.LogDebug("Interpreting received response: {ResponsePayload}", responsePayload);
+        
+        if (responsePayload.StartsWith(GoodResponse, StringComparison.OrdinalIgnoreCase))
             return GoogleDomainsResponse.Good;
-        if (responsePayload.StartsWith(ConflictingRecordsResponse))
+        if (responsePayload.StartsWith(ConflictingRecordsResponse, StringComparison.OrdinalIgnoreCase))
             return GoogleDomainsResponse.ConflictingRecords;
-        if (responsePayload.StartsWith(IpAlreadySetResponse))
+        if (responsePayload.StartsWith(IpAlreadySetResponse, StringComparison.OrdinalIgnoreCase))
             return GoogleDomainsResponse.IpAlreadySet;
 
         return responsePayload switch
