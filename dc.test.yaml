@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  dynamo:
+    image: dlerps/dynamo:local
+    build:
+      context: .
+    volumes:
+      - ./appsettings.Test.json:/dynamo/appsettings.Test.json
+      - ./tmp:/dynamo/data
+    environment:
+      DOTNET_ENVIRONMENT: Test
+    depends_on:
+      - wiremock
+    networks:
+      - dynamo-network
+
+  wiremock:
+    image: wiremock/wiremock:2.35.0
+    ports:
+      - 8080:8080
+    volumes:
+      - ./Wiremock/Stubs:/home/wiremock/mappings
+    command: >
+      --verbose
+      --global-response-templating
+      --root-dir /home/wiremock
+    networks:
+      - dynamo-network
+
+
+networks:
+  dynamo-network:

@@ -11,7 +11,7 @@ FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine AS final
 
 LABEL MAINTAINER=contact@lerps.de
 
-ENV ASPNETCORE_ENVIRONMENT=Development
+ENV DOTNET_ENVIRONMENT=Development
 
 WORKDIR /dynamo
 COPY --from=build /publish .
