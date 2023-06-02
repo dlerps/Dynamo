@@ -69,6 +69,13 @@ Dynamo supports multiple hostnames. If passed via environment variable make sure
 
 `GoogleDomains__Hosts__0__Password`:  The auto-generated dynDNS update password associated with that hostname
 
+#### Logging
+
+Logging settings are not part of the appsettings and can only be specified by environment variables. 
+
+`Verbose`: Set to `true` to enable verbose/debug logging
+`JsonLogFormat`: Set to `true` to enable json logging format. This is compatible with the GELF logging driver and can be used to send logs to Graylog or Seq.
+
 ## Docker Compose
 
 An example setup using compose with an external `appsettings.json`:
