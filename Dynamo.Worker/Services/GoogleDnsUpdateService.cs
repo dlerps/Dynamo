@@ -31,17 +31,26 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
         _longRunningTasks = new List<Task>();
     }
 
-    public Task UpdateAllHostnames(string ipAddress)
+    public Task UpdateAllHostnames(string ipAddress, CancellationToken cancellationToken)
     {
-        var updateTasks = _googleDomainsOptions.Hosts.Select(hostConfig => UpdateHostname(hostConfig, ipAddress));
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var updateTasks = _googleDomainsOptions
+            .Hosts
+            .Select(hostConfig => UpdateHostname(hostConfig, ipAddress, cancellationToken));
+
         return Task.WhenAll(updateTasks);
     }
 
-    private async Task UpdateHostname(GoogleDomainsHostConfiguration hostConfiguration, string ipAddress)
+    private async Task UpdateHostname(
+        GoogleDomainsHostConfiguration hostConfiguration,
+        string ipAddress,
+        CancellationToken cancellationToken)
     {
         if (!hostConfiguration.Enabled)
         {
-            _logger.LogInformation("Hostname update for {Hostname} is disabled. Skipping...", hostConfiguration.Hostname);
+            _logger.LogInformation("Hostname update for {Hostname} is disabled. Skipping...",
+                hostConfiguration.Hostname);
             return;
         }
 
@@ -56,8 +65,8 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
         var handleTask = responseInterpretation switch
         {
             GoogleDomainsResponse.Good => HandleGoodResponse(hostConfiguration.Hostname, ipAddress),
-            GoogleDomainsResponse.IpAlreadySet => HandleNoChangeResponse(hostConfiguration, ipAddress),
-            GoogleDomainsResponse.TemporaryProblem => HandleTemporaryProblemResponse(hostConfiguration),
+            GoogleDomainsResponse.IpAlreadySet => HandleNoChangeResponse(hostConfiguration, ipAddress, cancellationToken),
+            GoogleDomainsResponse.TemporaryProblem => HandleTemporaryProblemResponse(hostConfiguration, cancellationToken),
             _ => HandleErrorResponse(responseInterpretation, hostConfiguration),
         };
 
@@ -74,8 +83,11 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
 
         return Task.CompletedTask;
     }
-    
-    private Task HandleNoChangeResponse(GoogleDomainsHostConfiguration hostConfiguration, string ipAddress)
+
+    private Task HandleNoChangeResponse(
+        GoogleDomainsHostConfiguration hostConfiguration,
+        string ipAddress,
+        CancellationToken cancellationToken)
     {
         _logger.LogWarning(
             "The response indicated that the DNS record of {Hostname} was already set to {IpAddress}. Waiting for 1 hour before retrying",
@@ -85,33 +97,38 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
         hostConfiguration.Enabled = false;
 
         return Task.Run(async () =>
-        {
-            await Task.Delay(TimeSpan.FromHours(1));
-            hostConfiguration.Enabled = true;
-        });
+            {
+                await Task.Delay(TimeSpan.FromHours(1), cancellationToken);
+                hostConfiguration.Enabled = true;
+            },
+            cancellationToken);
     }
-    
-    private Task HandleTemporaryProblemResponse(GoogleDomainsHostConfiguration hostConfiguration)
+
+    private Task HandleTemporaryProblemResponse(
+        GoogleDomainsHostConfiguration hostConfiguration,
+        CancellationToken cancellationToken)
     {
-        _logger.LogWarning("The response indicated that the Google Domains server is having problems. Waiting 10 minutes until retrying");
+        _logger.LogWarning(
+            "The response indicated that the Google Domains server is having problems. Waiting 10 minutes until retrying");
 
         hostConfiguration.Enabled = false;
 
         return Task.Run(async () =>
-        {
-            await Task.Delay(TimeSpan.FromMinutes(10));
-            hostConfiguration.Enabled = true;
-        });
+            {
+                await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
+                hostConfiguration.Enabled = true;
+            },
+            cancellationToken);
     }
 
     private Task HandleErrorResponse(
-        GoogleDomainsResponse response, 
+        GoogleDomainsResponse response,
         GoogleDomainsHostConfiguration hostConfiguration)
     {
         hostConfiguration.Enabled = false;
-        
+
         _logger.LogError("Response {Response} is indicating an error", response.ToString());
-        
+
         if (response == GoogleDomainsResponse.Abuse)
             _logger.LogCritical("Requests for {Hostname} have been blocked for API abuse", hostConfiguration.Hostname);
         if (response == GoogleDomainsResponse.AuthFailed)
@@ -134,9 +151,9 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
             _logger.LogCritical(
                 "The response was rejected because {UserAgent} is invalid or banned. Change your settings and retry",
                 _userAgent);
-        
+
         _logger.LogWarning("Disabled host config for {Hostname}", hostConfiguration.Hostname);
-        
+
         return Task.CompletedTask;
     }
 

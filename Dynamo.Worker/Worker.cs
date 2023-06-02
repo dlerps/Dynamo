@@ -17,16 +17,16 @@ public class Worker : BackgroundService
         _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         while (true)
         {
-            await Run();
-            await Task.Delay(10000, stoppingToken);
+            await Run(cancellationToken);
+            await Task.Delay(10000, cancellationToken);
         }
     }
 
-    private async Task Run()
+    private async Task Run(CancellationToken cancellationToken)
     {
         using var serviceScope = _serviceProvider.CreateScope();
 
@@ -42,6 +42,6 @@ public class Worker : BackgroundService
         _logger.LogInformation("Updating Google Domains DNS records...");
         
         var googleDnsUpdaterService = serviceScope.ServiceProvider.GetRequiredService<IGoogleDnsUpdateService>();
-        await googleDnsUpdaterService.UpdateAllHostnames(ipAddress);
+        await googleDnsUpdaterService.UpdateAllHostnames(ipAddress, cancellationToken);
     }
 }
