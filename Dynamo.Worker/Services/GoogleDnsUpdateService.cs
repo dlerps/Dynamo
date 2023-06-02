@@ -12,6 +12,7 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService
     private readonly IGoogleDomainsResponseInterpreter _responseInterpreter;
     private readonly GoogleDomainsOptions _googleDomainsOptions;
     private readonly ILongRunningTaskService _longRunningTaskService;
+    private readonly ITimeoutTaskFactory _timeoutTaskFactory;
     private readonly ILogger<GoogleDnsUpdateService> _logger;
     private readonly string _userAgent;
 
@@ -20,6 +21,7 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService
         IGoogleDomainsResponseInterpreter responseInterpreter,
         IOptions<GoogleDomainsOptions> googleDomainsOptions,
         ILongRunningTaskService longRunningTaskService,
+        ITimeoutTaskFactory timeoutTaskFactory,
         IOptions<DynamoOptions> dynamoOptions,
         ILogger<GoogleDnsUpdateService> logger)
     {
@@ -28,6 +30,7 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService
         _googleDomainsOptions = googleDomainsOptions.Value;
         _responseInterpreter = responseInterpreter;
         _longRunningTaskService = longRunningTaskService;
+        _timeoutTaskFactory = timeoutTaskFactory;
         _userAgent = dynamoOptions.Value.UserAgentHeader;
     }
 
@@ -96,12 +99,7 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService
 
         hostConfiguration.Enabled = false;
 
-        return Task.Run(async () =>
-            {
-                await Task.Delay(TimeSpan.FromHours(1), cancellationToken);
-                hostConfiguration.Enabled = true;
-            },
-            cancellationToken);
+        return _timeoutTaskFactory.Create(hostConfiguration, 60, cancellationToken);
     }
 
     private Task HandleTemporaryProblemResponse(
@@ -113,12 +111,7 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService
 
         hostConfiguration.Enabled = false;
 
-        return Task.Run(async () =>
-            {
-                await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
-                hostConfiguration.Enabled = true;
-            },
-            cancellationToken);
+        return _timeoutTaskFactory.Create(hostConfiguration, 10, cancellationToken);
     }
 
     private Task HandleErrorResponse(
