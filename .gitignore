@@ -163,20 +163,6 @@ PublishScripts/
 *.nuget.props
 *.nuget.targets
 
-# Microsoft Azure Build Output
-csx/
-*.build.csdef
-
-# Microsoft Azure Emulator
-ecf/
-rcf/
-
-# Windows Store app package directories and files
-AppPackages/
-BundleArtifacts/
-Package.StoreAssociation.xml
-_pkginfo.txt
-
 # Visual Studio cache files
 # files ending in .cache can be ignored
 *.[Cc]ache
@@ -195,13 +181,6 @@ ClientBin/
 node_modules/
 orleans.codegen.cs
 
-# Since there are multiple workflows, uncomment next line to ignore bower_components
-# (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
-#bower_components/
-
-# RIA/Silverlight projects
-Generated_Code/
-
 # Backup & report files from converting an old project file
 # to a newer Visual Studio version. Backup files are not needed,
 # because we have git ;-)
@@ -214,16 +193,8 @@ UpgradeLog*.htm
 *.mdf
 *.ldf
 
-# Business Intelligence projects
-*.rdl.data
-*.bim.layout
-*.bim_*.settings
-
 # Microsoft Fakes
 FakesAssemblies/
-
-# GhostDoc plugin setting file
-*.GhostDoc.xml
 
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
@@ -242,19 +213,12 @@ FakesAssemblies/
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
 
-# Paket dependency manager
-.paket/paket.exe
-paket-files/
-
-# FAKE - F# Make
-.fake/
-
 # JetBrains Rider
 .idea/
 *.sln.iml
 
 # Local docker-compose file
-dc.*.yaml
+dc.local.yaml
 
 # VS Code
 .vscode/*
@@ -272,3 +236,4 @@ dc.*.yaml
 
 # IP cache
 ip.txt
+[Tt]mp
