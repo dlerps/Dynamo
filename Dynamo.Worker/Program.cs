@@ -5,6 +5,7 @@ using Dynamo.Worker.GoogleDomains.Configuration;
 using Dynamo.Worker.IpInfo;
 using Dynamo.Worker.IpInfo.Configuration;
 using Dynamo.Worker.Services;
+using Dynamo.Worker.Tasks;
 using Microsoft.Extensions.Options;
 using Refit;
 using Serilog;
@@ -33,8 +34,9 @@ IHost host = Host.CreateDefaultBuilder(args)
             .Configure<GoogleDomainsOptions>(context.Configuration.GetSection("GoogleDomains"))
             .Configure<IpInfoOptions>(context.Configuration.GetSection("IpInfo"))
             .Configure<DynamoOptions>(context.Configuration.GetSection("Dynamo"))
+            .AddSingleton<ILongRunningTaskService, LongRunningTaskService>()
             .AddScoped<IIpAddressService, IpAddressService>()
-            .AddSingleton<IGoogleDnsUpdateService, GoogleDnsUpdateService>()
+            .AddScoped<IGoogleDnsUpdateService, GoogleDnsUpdateService>()
             .AddScoped<IGoogleDomainsResponseInterpreter, GoogleDomainsResponseInterpreter>()
             .AddTransient<IHttpClientConfigurator, HttpClientConfigurator>()
             .AddHostedService<Worker>();
@@ -57,7 +59,6 @@ IHost host = Host.CreateDefaultBuilder(args)
                 var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
              
                 logger.LogInformation("Google Domains API address: {ApiAddress}", googleDomainsOpt.Value.ApiAddress);
-                logger.LogInformation("Found {Count} hosts", googleDomainsOpt.Value.Hosts.Count());
                 
                 httpClient.BaseAddress = new Uri(googleDomainsOpt.Value.ApiAddress);
                 configurator.Configure(httpClient);

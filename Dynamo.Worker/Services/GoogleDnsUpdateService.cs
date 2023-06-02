@@ -1,24 +1,25 @@
 using Dynamo.Worker.Configuration;
 using Dynamo.Worker.GoogleDomains;
 using Dynamo.Worker.GoogleDomains.Configuration;
+using Dynamo.Worker.Tasks;
 using Microsoft.Extensions.Options;
 
 namespace Dynamo.Worker.Services;
 
-public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
+public class GoogleDnsUpdateService : IGoogleDnsUpdateService
 {
     private readonly IGoogleDomainsApi _googleDomainsApi;
     private readonly IGoogleDomainsResponseInterpreter _responseInterpreter;
     private readonly GoogleDomainsOptions _googleDomainsOptions;
-    private readonly string _userAgent;
+    private readonly ILongRunningTaskService _longRunningTaskService;
     private readonly ILogger<GoogleDnsUpdateService> _logger;
-
-    private readonly List<Task> _longRunningTasks;
+    private readonly string _userAgent;
 
     public GoogleDnsUpdateService(
         IGoogleDomainsApi googleDomainsApi,
         IGoogleDomainsResponseInterpreter responseInterpreter,
         IOptions<GoogleDomainsOptions> googleDomainsOptions,
+        ILongRunningTaskService longRunningTaskService,
         IOptions<DynamoOptions> dynamoOptions,
         ILogger<GoogleDnsUpdateService> logger)
     {
@@ -26,9 +27,8 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
         _logger = logger;
         _googleDomainsOptions = googleDomainsOptions.Value;
         _responseInterpreter = responseInterpreter;
+        _longRunningTaskService = longRunningTaskService;
         _userAgent = dynamoOptions.Value.UserAgentHeader;
-
-        _longRunningTasks = new List<Task>();
     }
 
     public Task UpdateAllHostnames(string ipAddress, CancellationToken cancellationToken)
@@ -71,7 +71,7 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
         };
 
         if (!handleTask.IsCompleted)
-            _longRunningTasks.Add(handleTask);
+            _longRunningTaskService.Add(handleTask);
     }
 
     private Task HandleGoodResponse(string hostname, string ipAddress)
@@ -155,12 +155,5 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService, IAsyncDisposable
         _logger.LogWarning("Disabled host config for {Hostname}", hostConfiguration.Hostname);
 
         return Task.CompletedTask;
-    }
-
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_longRunningTasks.Any())
-            await Task.WhenAll(_longRunningTasks);
     }
 }
