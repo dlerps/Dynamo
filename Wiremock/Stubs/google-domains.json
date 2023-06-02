@@ -1,0 +1,170 @@
+{
+    "mappings": [
+        {
+            "priority": 100,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update"
+            },
+            "response": {
+                "status": 200,
+                "body": "Good 127.0.0.1",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        },
+        {
+            "priority": 1,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update",
+                "queryParameters": {
+                    "hostname": {
+                        "equalTo": "nochg.de"
+                    }
+                }
+            },
+            "response": {
+                "status": 200,
+                "body": "nochg 127.0.0.1",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        },
+        {
+            "priority": 1,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update",
+                "queryParameters": {
+                    "hostname": {
+                        "equalTo": "911.de"
+                    }
+                }
+            },
+            "response": {
+                "status": 200,
+                "body": "911",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        },
+        {
+            "priority": 1,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update",
+                "queryParameters": {
+                    "hostname": {
+                        "equalTo": "abuse.de"
+                    }
+                }
+            },
+            "response": {
+                "status": 200,
+                "body": "abuse",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        },
+        {
+            "priority": 1,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update",
+                "queryParameters": {
+                    "hostname": {
+                        "equalTo": "badagent.de"
+                    }
+                }
+            },
+            "response": {
+                "status": 200,
+                "body": "badagent",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        },
+        {
+            "priority": 1,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update",
+                "queryParameters": {
+                    "hostname": {
+                        "equalTo": "notfqdn.de"
+                    }
+                }
+            },
+            "response": {
+                "status": 200,
+                "body": "notfqdn",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        },
+        {
+            "priority": 1,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update",
+                "queryParameters": {
+                    "hostname": {
+                        "equalTo": "badauth.de"
+                    }
+                }
+            },
+            "response": {
+                "status": 200,
+                "body": "badauth",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        },
+        {
+            "priority": 1,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update",
+                "queryParameters": {
+                    "hostname": {
+                        "equalTo": "nohost.de"
+                    }
+                }
+            },
+            "response": {
+                "status": 200,
+                "body": "nohost",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        },
+        {
+            "priority": 1,
+            "request": {
+                "method": "POST",
+                "urlPath": "/nic/update",
+                "queryParameters": {
+                    "hostname": {
+                        "equalTo": "conflict.de"
+                    }
+                }
+            },
+            "response": {
+                "status": 200,
+                "body": "conflict A",
+                "headers": {
+                    "Content-Type": "text/plain"
+                }
+            }
+        }
+    ]
+}
