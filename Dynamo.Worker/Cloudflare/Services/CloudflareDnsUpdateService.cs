@@ -42,7 +42,7 @@ public class CloudflareDnsUpdateService : IICloudflareDnsUpdateService
             _logger.LogInformation("Cloudflare hostname update is disabled. Skipping...");
             return;
         }
-        
+
         var updateTasks = _cloudflareOptions.Hosts
             .Select(host => UpdateHostname(host, ipAddress, cancellationToken))
             .ToList();
@@ -60,7 +60,7 @@ public class CloudflareDnsUpdateService : IICloudflareDnsUpdateService
             _logger.LogInformation("Hostname update for {Hostname} is disabled. Skipping...", host.Hostname);
             return;
         }
-        
+
         cancellationToken.ThrowIfCancellationRequested();
 
         var dnsRecords = await _cloudflareApi.GetDnsRecords(
@@ -116,7 +116,7 @@ public class CloudflareDnsUpdateService : IICloudflareDnsUpdateService
 
         if (host.Ttl.HasValue)
             request.Ttl = host.Ttl.Value;
-        
+
         if (dnsRecord.Proxiable == true && host.Proxied.HasValue)
             request.Proxied = host.Proxied.Value;
 
@@ -130,10 +130,18 @@ public class CloudflareDnsUpdateService : IICloudflareDnsUpdateService
                 cancellationToken
             );
 
-            if (response.StatusCode != HttpStatusCode.OK || response.StatusCode != HttpStatusCode.NoContent)
+            if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.NoContent)
             {
-                _logger.LogError("Failed to update DNS record for {Hostname}", host.Hostname);
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError(
+                    "Failed to update DNS record for {Hostname}: {StatusCode} - {@ErrorResponse}",
+                    host.Hostname,
+                    response.StatusCode,
+                    responseContent
+                );
+                
                 await _timeoutTaskFactory.Create(host, DefaultTimeoutInMinutes, cancellationToken);
+                
                 return;
             }
 
