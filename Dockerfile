@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
 WORKDIR /src
 COPY ./Dynamo.Worker/Dynamo.Worker.csproj ./
@@ -7,7 +7,7 @@ RUN dotnet restore
 COPY ./Dynamo.Worker ./
 RUN dotnet publish --no-restore -c Release -o /publish ./Dynamo.Worker.csproj
 
-FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine AS final
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
 
 LABEL MAINTAINER=contact@lerps.de
 

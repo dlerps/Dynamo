@@ -1,4 +1,4 @@
-namespace Dynamo.Worker.Services;
+namespace Dynamo.Worker.GoogleDomains.Services;
 
 public interface IGoogleDnsUpdateService
 {

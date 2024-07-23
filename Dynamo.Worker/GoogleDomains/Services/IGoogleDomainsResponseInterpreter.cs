@@ -1,6 +1,6 @@
-using Dynamo.Worker.GoogleDomains;
+using Dynamo.Worker.GoogleDomains.Model;
 
-namespace Dynamo.Worker.Services;
+namespace Dynamo.Worker.GoogleDomains.Services;
 
 public interface IGoogleDomainsResponseInterpreter
 {

@@ -1,4 +1,4 @@
-namespace Dynamo.Worker.GoogleDomains;
+namespace Dynamo.Worker.GoogleDomains.Model;
 
 public enum GoogleDomainsResponse
 {

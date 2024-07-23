@@ -1,10 +1,10 @@
 using Dynamo.Worker.Configuration;
-using Dynamo.Worker.GoogleDomains;
 using Dynamo.Worker.GoogleDomains.Configuration;
+using Dynamo.Worker.GoogleDomains.Model;
 using Dynamo.Worker.Tasks;
 using Microsoft.Extensions.Options;
 
-namespace Dynamo.Worker.Services;
+namespace Dynamo.Worker.GoogleDomains.Services;
 
 public class GoogleDnsUpdateService : IGoogleDnsUpdateService
 {
@@ -36,6 +36,12 @@ public class GoogleDnsUpdateService : IGoogleDnsUpdateService
 
     public async Task UpdateAllHostnames(string ipAddress, CancellationToken cancellationToken)
     {
+        if (!_googleDomainsOptions.Enabled)
+        {
+            _logger.LogInformation("Google Domains hostname update is disabled. Skipping...");
+            return;
+        }
+        
         foreach (var hostConfiguration in _googleDomainsOptions.Hosts)
         {
             cancellationToken.ThrowIfCancellationRequested();

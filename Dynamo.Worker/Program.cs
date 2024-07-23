@@ -2,6 +2,7 @@ using Dynamo.Worker;
 using Dynamo.Worker.Configuration;
 using Dynamo.Worker.GoogleDomains;
 using Dynamo.Worker.GoogleDomains.Configuration;
+using Dynamo.Worker.GoogleDomains.Services;
 using Dynamo.Worker.IpInfo;
 using Dynamo.Worker.IpInfo.Configuration;
 using Dynamo.Worker.Services;

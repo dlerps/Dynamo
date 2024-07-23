@@ -1,5 +1,3 @@
-using Dynamo.Worker.GoogleDomains.Configuration;
-
 namespace Dynamo.Worker.Tasks;
 
 public class TimeoutTaskFactory : ITimeoutTaskFactory
@@ -14,7 +12,7 @@ public class TimeoutTaskFactory : ITimeoutTaskFactory
     }
 
     public Task Create(
-        GoogleDomainsHostConfiguration hostConfiguration,
+        IEnabledConfiguration hostConfiguration,
         int timeoutInMinutes,
         CancellationToken cancellationToken)
     {
@@ -26,8 +24,8 @@ public class TimeoutTaskFactory : ITimeoutTaskFactory
                 await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
                 
                 _logger.LogInformation(
-                    "{Hostname} timeout of {Seconds} seconds expired. Re-enabiling configuration",
-                    hostConfiguration.Hostname,
+                    "{Configuration} timeout of {Seconds} seconds expired. Re-enabling configuration",
+                    hostConfiguration.Identifier,
                     delay);
                 
                 hostConfiguration.Enabled = true;
