@@ -8,5 +8,19 @@ public enum DnsRecordType
     CNAME,
     MX,
     TXT,
-    NS
+    NS,
+    CAA,
+    CERT,
+    DNSKEY,
+    DS,
+    NAPTR,
+    SMIMEA,
+    HTTPS,
+    LOC,
+    PTR,
+    SSHFP,
+    URI,
+    SRV,
+    TLSA,
+    SVCB
 }

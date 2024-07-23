@@ -12,7 +12,7 @@ public interface ICloudflareApi
         CancellationToken cancellationToken = default);
     
     [Patch("/zones/{zoneId}/dns_records/{recordId}")]
-    Task<CloudflareApiResult<DnsRecordInfoDto>?> UpdateDnsRecord(
+    Task<HttpResponseMessage> UpdateDnsRecord(
         [AliasAs("zoneId")] string zoneId, 
         [AliasAs("recordId")] string recordId, 
         [Body] DnsRecordInfoDto request, 

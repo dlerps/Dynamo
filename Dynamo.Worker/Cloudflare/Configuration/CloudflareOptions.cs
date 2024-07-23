@@ -6,7 +6,7 @@ public class CloudflareOptions
     
     public string ApiToken { get; set; } = String.Empty;
     
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get; set; } = true;
 
     public string ApiAddress { get; set; } = "https://api.cloudflare.com/client/v4";
 }

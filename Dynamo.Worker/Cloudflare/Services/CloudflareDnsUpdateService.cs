@@ -122,7 +122,7 @@ public class CloudflareDnsUpdateService : IICloudflareDnsUpdateService
 
         try
         {
-            var updatedDnsRecord = await _cloudflareApi.UpdateDnsRecord(
+            var response = await _cloudflareApi.UpdateDnsRecord(
                 host.ZoneId,
                 dnsRecord.Id,
                 request,
@@ -130,7 +130,7 @@ public class CloudflareDnsUpdateService : IICloudflareDnsUpdateService
                 cancellationToken
             );
 
-            if (updatedDnsRecord is null || !updatedDnsRecord.Success)
+            if (response.StatusCode != HttpStatusCode.OK || response.StatusCode != HttpStatusCode.NoContent)
             {
                 _logger.LogError("Failed to update DNS record for {Hostname}", host.Hostname);
                 await _timeoutTaskFactory.Create(host, DefaultTimeoutInMinutes, cancellationToken);
@@ -142,11 +142,8 @@ public class CloudflareDnsUpdateService : IICloudflareDnsUpdateService
                 ipAddress
             );
         }
-        catch (ApiException ae)
+        catch (ApiException ae) when (ae.StatusCode == HttpStatusCode.TooManyRequests)
         {
-            if (ae.StatusCode != HttpStatusCode.TooManyRequests)
-                throw;
-            
             _logger.LogWarning("API rate limit exceeded. Waiting for 15 minutes before retrying...");
             await _timeoutTaskFactory.Create(host, DefaultTimeoutInMinutes, cancellationToken);
         }
