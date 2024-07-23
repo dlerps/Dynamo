@@ -1,3 +1,4 @@
+using Dynamo.Worker.Cloudflare.Services;
 using Dynamo.Worker.Configuration;
 using Dynamo.Worker.GoogleDomains.Services;
 using Dynamo.Worker.Services;
@@ -69,5 +70,12 @@ public class Worker : BackgroundService
         
         var googleDnsUpdaterService = serviceScope.ServiceProvider.GetRequiredService<IGoogleDnsUpdateService>();
         await googleDnsUpdaterService.UpdateAllHostnames(ipAddress, cancellationToken);
+        
+        _logger.LogInformation("Updating Cloudflare DNS records...");
+        
+        var cloudflareDnsUpdaterService = serviceScope.ServiceProvider.GetRequiredService<IICloudflareDnsUpdateService>();
+        await cloudflareDnsUpdaterService.UpdateAllHostnames(ipAddress, cancellationToken);
+        
+        _logger.LogInformation("Finished updating DNS records.");
     }
 }

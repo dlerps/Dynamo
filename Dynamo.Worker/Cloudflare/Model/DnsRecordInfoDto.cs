@@ -5,19 +5,19 @@ namespace Dynamo.Worker.Cloudflare.Model;
 public record DnsRecordInfoDto
 {
     [JsonPropertyName("id")]
-    public string? Id { get; set; }
+    public string Id { get; set; } = String.Empty;
+    
+    [JsonPropertyName("zone_id")]
+    public string ZoneId { get; set; } = String.Empty;
     
     [JsonPropertyName("name")]
     public string? Name { get; set; }
-    
-    [JsonPropertyName("zone_id")]
-    public string? ZoneId { get; set; }
     
     [JsonPropertyName("comment")]
     public string? Comment { get; set; }
     
     [JsonPropertyName("type")]
-    public DnsRecordType? Type { get; set; }
+    public DnsRecordType? RecordType { get; set; }
     
     [JsonPropertyName("content")]
     public string? Content { get; set; }
@@ -32,7 +32,7 @@ public record DnsRecordInfoDto
     public bool? Locked { get; set; }
     
     [JsonPropertyName("ttl")]
-    public int? Ttl { get; set; }
+    public uint? Ttl { get; set; }
     
     [JsonPropertyName("created_on")]
     public DateTimeOffset? CreatedOn { get; set; }

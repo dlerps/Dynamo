@@ -1,4 +1,7 @@
 using Dynamo.Worker;
+using Dynamo.Worker.Cloudflare;
+using Dynamo.Worker.Cloudflare.Configuration;
+using Dynamo.Worker.Cloudflare.Services;
 using Dynamo.Worker.Configuration;
 using Dynamo.Worker.GoogleDomains;
 using Dynamo.Worker.GoogleDomains.Configuration;
@@ -20,6 +23,7 @@ IHost host = Host.CreateDefaultBuilder(args)
         builder
             .AddJsonFile("appsettings.json", false, false)
             .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true, false)
+            .AddJsonFile($"appsettings.local.json", true, false)
             .AddEnvironmentVariables();
     })
     .ConfigureServices((context, services) =>
@@ -33,6 +37,7 @@ IHost host = Host.CreateDefaultBuilder(args)
                 log.AddSerilog(Log.Logger, true);
             })
             .Configure<GoogleDomainsOptions>(context.Configuration.GetSection("GoogleDomains"))
+            .Configure<CloudflareOptions>(context.Configuration.GetSection("Cloudflare"))
             .Configure<IpInfoOptions>(context.Configuration.GetSection("IpInfo"))
             .Configure<DynamoOptions>(context.Configuration.GetSection("Dynamo"))
             .AddSingleton<ILongRunningTaskService, LongRunningTaskService>()
@@ -40,6 +45,7 @@ IHost host = Host.CreateDefaultBuilder(args)
             .AddScoped<IIpAddressService, IpAddressService>()
             .AddScoped<IGoogleDnsUpdateService, GoogleDnsUpdateService>()
             .AddScoped<IGoogleDomainsResponseInterpreter, GoogleDomainsResponseInterpreter>()
+            .AddScoped<IICloudflareDnsUpdateService, CloudflareDnsUpdateService>()
             .AddTransient<IHttpClientConfigurator, HttpClientConfigurator>()
             .AddHostedService<Worker>();
 
@@ -63,6 +69,19 @@ IHost host = Host.CreateDefaultBuilder(args)
                 logger.LogInformation("Google Domains API address: {ApiAddress}", googleDomainsOpt.Value.ApiAddress);
                 
                 httpClient.BaseAddress = new Uri(googleDomainsOpt.Value.ApiAddress);
+                configurator.Configure(httpClient);
+            });
+        
+        services.AddRefitClient<ICloudflareApi>()
+            .ConfigureHttpClient((serviceProvider, httpClient) =>
+            {
+                var configurator = serviceProvider.GetRequiredService<IHttpClientConfigurator>();
+                var cloudflareOpt = serviceProvider.GetRequiredService<IOptions<CloudflareOptions>>();
+                var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+             
+                logger.LogInformation("Cloudflare API address: {ApiAddress}", cloudflareOpt.Value.ApiAddress);
+                
+                httpClient.BaseAddress = new Uri(cloudflareOpt.Value.ApiAddress);
                 configurator.Configure(httpClient);
             });
     })

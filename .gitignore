@@ -237,3 +237,6 @@ dc.local.yaml
 # IP cache
 ip.txt
 [Tt]mp
+
+# Local settings
+appsettings.local.json
